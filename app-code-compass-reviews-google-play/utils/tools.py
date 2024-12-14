@@ -6,6 +6,8 @@ import pymongo
 from urllib.parse import quote_plus
 from pyspark.sql import DataFrame
 from pathlib import Path
+from pyspark.sql.types import StringType, IntegerType
+from schema_google import google_play_schema_bronze
 
 
 def get_api_key():
@@ -92,6 +94,8 @@ def save_reviews(reviews_df: DataFrame, directory: str):
     except Exception as e:
         logging.error(f"Erro ao salvar os dados: {e}")
 
+
+
 def write_to_mongo(dados_feedback: dict, table_id: str):
 
     mongo_user = os.environ["MONGO_USER"]
@@ -129,11 +133,26 @@ def write_to_mongo(dados_feedback: dict, table_id: str):
         # Garante que a conexão será fechada
         client.close()
 
+def get_schema(df, schema):
+    """
+    Obtém o DataFrame a seguir o schema especificado.
+    """
+    for field in schema.fields:
+        if field.dataType == IntegerType():
+            df = df.withColumn(field.name, df[field.name].cast(IntegerType()))
+        elif field.dataType == StringType():
+            df = df.withColumn(field.name, df[field.name].cast(StringType()))
+    return df.select([field.name for field in schema.fields])
+
 def save_dataframe(df, path, label):
     """
     Salva o DataFrame em formato parquet e loga a operação.
     """
     try:
+        schema = google_play_schema_bronze()
+        # Alinhar o DataFrame ao schema definido
+        df = get_schema(df, schema)
+
         if df.limit(1).count() > 0:  # Verificar existência de dados
             logging.info(f"Salvando dados {label} para: {path}")
             save_reviews(df, path)
@@ -141,6 +160,8 @@ def save_dataframe(df, path, label):
             logging.warning(f"Nenhum dado {label} foi encontrado!")
     except Exception as e:
         logging.error(f"Erro ao salvar dados {label}: {e}", exc_info=True)
+
+
 
 def save_metrics(metrics_json):
     """
