@@ -17,7 +17,7 @@ def main():
 
     # Verificar se o número correto de argumentos foi passado
     if len(args) != 3:
-        print("Usage: spark-submit app.py <product_id> <name_app>")
+        print("[*] Usage: spark-submit app.py <product_id> <name_app>")
         sys.exit(1)
 
     # Entrada e captura de variaveis e parametros
@@ -29,24 +29,24 @@ def main():
         # Criação da sessão Spark
         with spark_session() as spark:
 
-            # Coleta de métricas
+            # Coleta de métricas #######################################################################################
             metrics_collector = MetricsCollector(spark)
             metrics_collector.start_collection()
 
-            # Buscar avaliações
+            # Buscar avaliações ########################################################################################
             reviews_data = fetch_reviews(product_id)
 
             if reviews_data:
-                # Converter a lista de avaliações para RDD
+                # Converter a lista de avaliações para RDD #############################################################
                 reviews_rdd = spark.sparkContext.parallelize(reviews_data)
                 reviews_df = spark.createDataFrame(reviews_rdd)
 
-                # Verifica se a coluna "response" está presente
+                # Verifica se a coluna "response" está presente ########################################################
                 if "response" not in reviews_df.columns:
                     # Adiciona a coluna "response" com valores nulos
                     reviews_df = reviews_df.withColumn("response", F.lit(None).cast(StringType()))
 
-                # Definicao dos paths
+                # Definicao dos paths ##################################################################################
                 datePath = datetime.now()
                 path_target = f"/santander/bronze/compass/reviews/googlePlay/{name_app}/odate={datePath.strftime('%Y%m%d')}/"
                 path_target_fail = f"/santander/bronze/compass/reviews_fail/googlePlay/{name_app}/odate={datePath.strftime('%Y%m%d')}/"
@@ -68,13 +68,13 @@ def main():
                 # Salvar métricas no MongoDB
                 save_metrics(metrics_json)
                 
-                print(f"Métricas da aplicação: {json.loads(metrics_json)}")
+                print(f"[*] Métricas da aplicação: {json.loads(metrics_json)}")
             else:
-                print("Nenhuma avaliação encontrada para o product_id fornecido.")
+                print("[*] Nenhuma avaliação encontrada para o product_id fornecido.")
 
     except Exception as e:
-        print(f"Erro ao criar o DataFrame: {e}")
-        logging.error(f"Erro ao processar avaliações: {e}", exc_info=True)
+        print(f"[*] Erro ao criar o DataFrame: {e}")
+        logging.error(f"[*] Erro ao processar avaliações: {e}", exc_info=True)
 
     finally:
         spark.stop()
@@ -82,13 +82,13 @@ def main():
 def spark_session():
     try:
         spark = SparkSession.builder \
-            .appName("App Reviews origem [apple store]") \
+            .appName("App Reviews origem [google play]") \
             .config("spark.jars.packages", "org.apache.spark:spark-measure_2.12:0.16") \
             .getOrCreate()
         return spark
 
     except Exception as e:
-        logging.error(f"Falha ao criar SparkSession: {e}", exc_info=True)
+        logging.error(f"[*] Falha ao criar SparkSession: {e}", exc_info=True)
         raise
 
 if __name__ == "__main__":

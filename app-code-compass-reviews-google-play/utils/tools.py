@@ -15,7 +15,7 @@ def get_api_key():
     api_key = os.environ["SERPAPI_KEY"]
 
     if not api_key:
-        raise ValueError("Chave da API SerpApi não encontrada. Verifique o arquivo .env")
+        raise ValueError("[*] Chave da API SerpApi não encontrada. Verifique o arquivo .env")
     return api_key
 
 def fetch_reviews(product_id, reviews_per_page=199, max_pages=10):
@@ -56,7 +56,7 @@ def fetch_reviews(product_id, reviews_per_page=199, max_pages=10):
             results = response.json()
 
             if 'reviews' not in results:
-                raise Exception("Não foi possível recuperar as avaliações.")
+                raise Exception("[*] Não foi possível recuperar as avaliações.")
 
             reviews = results['reviews']
             all_reviews.extend(reviews)
@@ -69,7 +69,7 @@ def fetch_reviews(product_id, reviews_per_page=199, max_pages=10):
             page_count += 1
 
         except requests.exceptions.RequestException as e:
-            print(f"Erro ao fazer a requisição: {e}")
+            print(f"[*] Erro ao fazer a requisição: {e}")
             break
 
     return all_reviews
@@ -89,10 +89,10 @@ def save_reviews(reviews_df: DataFrame, directory: str):
         # Escrever os dados no formato Delta
         # reviews_df.write.format("delta").mode("overwrite").save(directory)
         reviews_df.write.option("compression", "snappy").mode("overwrite").parquet(directory)
-        logging.info(f"Dados salvos em {directory} no formato Delta")
+        logging.info(f"[*] Dados salvos em {directory} no formato Delta")
 
     except Exception as e:
-        logging.error(f"Erro ao salvar os dados: {e}")
+        logging.error(f"[*] Erro ao salvar os dados: {e}")
 
 
 
@@ -128,7 +128,7 @@ def write_to_mongo(dados_feedback: dict, table_id: str):
         elif isinstance(dados_feedback, list):  # Verifica se os dados são uma lista
             collection.insert_many(dados_feedback)
         else:
-            print("Os dados devem ser um dicionário ou uma lista de dicionários.")
+            print("[*] Os dados devem ser um dicionário ou uma lista de dicionários.")
     finally:
         # Garante que a conexão será fechada
         client.close()
@@ -154,12 +154,12 @@ def save_dataframe(df, path, label):
         df = get_schema(df, schema)
 
         if df.limit(1).count() > 0:  # Verificar existência de dados
-            logging.info(f"Salvando dados {label} para: {path}")
+            logging.info(f"[*] Salvando dados {label} para: {path}")
             save_reviews(df, path)
         else:
-            logging.warning(f"Nenhum dado {label} foi encontrado!")
+            logging.warning(f"[*] Nenhum dado {label} foi encontrado!")
     except Exception as e:
-        logging.error(f"Erro ao salvar dados {label}: {e}", exc_info=True)
+        logging.error(f"[*] Erro ao salvar dados {label}: {e}", exc_info=True)
 
 
 
@@ -170,6 +170,6 @@ def save_metrics(metrics_json):
     try:
         metrics_data = json.loads(metrics_json)
         write_to_mongo(metrics_data, "dt_datametrics_compass")
-        logging.info(f"Métricas da aplicação salvas: {metrics_json}")
+        logging.info(f"[*] Métricas da aplicação salvas: {metrics_json}")
     except json.JSONDecodeError as e:
-        logging.error(f"Erro ao processar métricas: {e}", exc_info=True)
+        logging.error(f"[*] Erro ao processar métricas: {e}", exc_info=True)
