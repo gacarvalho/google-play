@@ -195,15 +195,31 @@ def validate_ingest(df: DataFrame) -> tuple:
     )
 
     # Agora, gerando os registros inválidos de maneira mais direta
-    invalid_records = df.filter(
-        (col("id").isNull()) | 
-        (col("snippet").isNull()) | 
+    invalid_records = df.select("avatar","date","id","iso_date",
+                                "likes","rating","response","snippet",
+                                "title").filter(
+        (col("id").isNull()) |
+        (col("snippet").isNull()) |
         (col("rating").isNull())
+    )
+    # Se houver duplicatas, adicionamos ao DataFrame de inválidos
+    # Seleciona apenas a coluna "id" do duplicates
+    duplicate_ids = duplicates.select("id")
+    duplicates_records = df.join(duplicate_ids, on="id", how="inner").select(
+        df["avatar"],
+        df["date"],
+        df["id"],
+        df["iso_date"],
+        df["likes"],
+        df["rating"],
+        df["response"],
+        df["snippet"],
+        df["title"]
     )
 
     # Se houver duplicatas, adicionamos ao DataFrame de inválidos
     if duplicate_count > 0:
-        invalid_records = invalid_records.union(duplicates)
+        invalid_records = invalid_records.union(duplicates_records)
 
     print_validation_results(validation_results)
 
