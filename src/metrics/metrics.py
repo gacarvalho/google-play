@@ -187,21 +187,24 @@ def validate_ingest(df: DataFrame) -> tuple:
         validation_results["type_consistency_check"]["code"] = 300
         validation_results["type_consistency_check"]["message"] = "Consistência dos tipos de dados verificada com sucesso."
 
+    cols = [
+        "avatar","date","id","iso_date","likes","rating","response","snippet","title"
+    ]
+
     # Modificação: Remover o uso de subtract e filtrar registros válidos
-    valid_records = df.filter(
+    valid_records = df.select(*cols).filter(
         (col("id").isNotNull()) & 
         (col("snippet").isNotNull()) & 
         (col("rating").isNotNull())
     )
 
     # Agora, gerando os registros inválidos de maneira mais direta
-    invalid_records = df.select("avatar","date","id","iso_date",
-                                "likes","rating","response","snippet",
-                                "title").filter(
+    invalid_records = df.select(*cols).filter(
         (col("id").isNull()) |
         (col("snippet").isNull()) |
         (col("rating").isNull())
     )
+
     # Se houver duplicatas, adicionamos ao DataFrame de inválidos
     # Seleciona apenas a coluna "id" do duplicates
     duplicate_ids = duplicates.select("id")

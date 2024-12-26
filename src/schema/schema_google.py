@@ -12,3 +12,5 @@ def google_play_schema_bronze():
         StructField("snippet", StringType(), True),
         StructField("title", StringType(), True)
     ])
+
+
