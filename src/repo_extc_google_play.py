@@ -76,6 +76,22 @@ def main():
         print(f"[*] Erro ao criar o DataFrame: {e}")
         logging.error(f"[*] Erro ao processar avaliações: {e}", exc_info=True)
 
+        # JSON de erro
+        error_metrics = {
+            "data_e_hora": datetime.now().isoformat(),
+            "camada": "bronze",
+            "grupo": "compass",
+            "job": "google_play_reviews",
+            "relevancia": "0",
+            "torre": "SBBR_COMPASS",
+            "erro": str(e)
+        }
+
+        metrics_json = json.dumps(error_metrics)
+
+        # Salvar métricas de erro no MongoDB
+        save_metrics_job_fail(metrics_json)
+
     finally:
         spark.stop()
 
