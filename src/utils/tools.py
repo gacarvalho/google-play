@@ -4,6 +4,7 @@ import logging
 import requests
 import pymongo
 from urllib.parse import quote_plus
+from datetime import datetime
 from pyspark.sql import DataFrame
 from pathlib import Path
 from pyspark.sql.types import StringType, IntegerType
@@ -70,6 +71,7 @@ def fetch_reviews(product_id, reviews_per_page=199, max_pages=10):
 
         except requests.exceptions.RequestException as e:
             print(f"[*] Erro ao fazer a requisição: {e}")
+            send_metrics_fail(e)
             break
 
     return all_reviews
@@ -184,3 +186,22 @@ def save_metrics_job_fail(metrics_json):
         logging.info(f"[*] Métricas da aplicação salvas: {metrics_json}")
     except json.JSONDecodeError as e:
         logging.error(f"[*] Erro ao processar métricas: {e}", exc_info=True)
+
+
+def send_metrics_fail(e):
+
+    # JSON de erro
+    error_metrics = {
+        "data_e_hora": datetime.now().isoformat(),
+        "camada": "bronze",
+        "grupo": "compass",
+        "job": "google_play_reviews",
+        "relevancia": "0",
+        "torre": "SBBR_COMPASS",
+        "erro": str(e)
+    }
+
+    metrics_json = json.dumps(error_metrics)
+
+    # Salvar métricas de erro no MongoDB
+    save_metrics_job_fail(metrics_json)

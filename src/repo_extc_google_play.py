@@ -5,7 +5,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import StringType
 from datetime import datetime
-from metrics import MetricsCollector, validate_ingest
+from metrics import MetricsCollector, validate_ingest, send_metrics_fail
 from tools import *
 
 
@@ -75,22 +75,8 @@ def main():
     except Exception as e:
         print(f"[*] Erro ao criar o DataFrame: {e}")
         logging.error(f"[*] Erro ao processar avaliações: {e}", exc_info=True)
+        send_metrics_fail()
 
-        # JSON de erro
-        error_metrics = {
-            "data_e_hora": datetime.now().isoformat(),
-            "camada": "bronze",
-            "grupo": "compass",
-            "job": "google_play_reviews",
-            "relevancia": "0",
-            "torre": "SBBR_COMPASS",
-            "erro": str(e)
-        }
-
-        metrics_json = json.dumps(error_metrics)
-
-        # Salvar métricas de erro no MongoDB
-        save_metrics_job_fail(metrics_json)
 
     finally:
         spark.stop()
