@@ -5,7 +5,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import StringType
 from datetime import datetime
-from metrics import MetricsCollector, validate_ingest, send_metrics_fail
+from metrics import MetricsCollector, validate_ingest
 from tools import *
 
 
