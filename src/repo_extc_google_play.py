@@ -75,7 +75,7 @@ def main():
     except Exception as e:
         print(f"[*] Erro ao criar o DataFrame: {e}")
         logging.error(f"[*] Erro ao processar avaliações: {e}", exc_info=True)
-        send_metrics_fail()
+        send_metrics_fail(e)
 
 
     finally:
