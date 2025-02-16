@@ -4,12 +4,11 @@ import logging
 import requests
 import pymongo
 from urllib.parse import quote_plus
-from datetime import datetime
 from pyspark.sql import DataFrame
 from pathlib import Path
 from pyspark.sql.types import StringType, IntegerType
 from schema_google import google_play_schema_bronze
-
+from elasticsearch import Elasticsearch
 
 def get_api_key():
     """Retorna a chave da API armazenada nas variáveis de ambiente."""
@@ -78,7 +77,7 @@ def fetch_reviews(product_id, reviews_per_page=199, max_pages=10):
 
 def save_reviews(reviews_df: DataFrame, directory: str):
     """
-    Salva os dados do DataFrame no formato Delta no diretório especificado.
+    Salva os dados do DataFrame no formato parquet no diretório especificado.
 
     Args:
         reviews_df (DataFrame): DataFrame PySpark contendo as avaliações.
@@ -88,10 +87,8 @@ def save_reviews(reviews_df: DataFrame, directory: str):
         # Verifica se o diretório existe e cria-o se não existir
         Path(directory).mkdir(parents=True, exist_ok=True)
 
-        # Escrever os dados no formato Delta
-        # reviews_df.write.format("delta").mode("overwrite").save(directory)
         reviews_df.write.option("compression", "snappy").mode("overwrite").parquet(directory)
-        logging.info(f"[*] Dados salvos em {directory} no formato Delta")
+        logging.info(f"[*] Dados salvos em {directory} no formato parquet")
 
     except Exception as e:
         logging.error(f"[*] Erro ao salvar os dados: {e}")
@@ -165,43 +162,3 @@ def save_dataframe(df, path, label):
 
 
 
-def save_metrics(metrics_json):
-    """
-    Salva as métricas no MongoDB.
-    """
-    try:
-        metrics_data = json.loads(metrics_json)
-        write_to_mongo(metrics_data, "dt_datametrics_compass")
-        logging.info(f"[*] Métricas da aplicação salvas: {metrics_json}")
-    except json.JSONDecodeError as e:
-        logging.error(f"[*] Erro ao processar métricas: {e}", exc_info=True)
-
-def save_metrics_job_fail(metrics_json):
-    """
-    Salva as métricas no MongoDB.
-    """
-    try:
-        metrics_data = json.loads(metrics_json)
-        write_to_mongo(metrics_data, "dt_datametrics_fail_compass")
-        logging.info(f"[*] Métricas da aplicação salvas: {metrics_json}")
-    except json.JSONDecodeError as e:
-        logging.error(f"[*] Erro ao processar métricas: {e}", exc_info=True)
-
-
-def send_metrics_fail(e):
-
-    # JSON de erro
-    error_metrics = {
-        "data_e_hora": datetime.now().isoformat(),
-        "camada": "bronze",
-        "grupo": "compass",
-        "job": "google_play_reviews",
-        "relevancia": "0",
-        "torre": "SBBR_COMPASS",
-        "erro": str(e)
-    }
-
-    metrics_json = json.dumps(error_metrics)
-
-    # Salvar métricas de erro no MongoDB
-    save_metrics_job_fail(metrics_json)

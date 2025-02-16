@@ -23,8 +23,8 @@ validate_params() {
     error_exit "O parâmetro CONFIG_ENV (pre ou prod) é obrigatório!"
   fi
 
-  if [[ -z "$PARAM1" ]] || [[ -z "$PARAM2" ]]; then
-    error_exit "Os parâmetros PARAM1 e PARAM2 são obrigatórios!"
+  if [[ -z "$PARAM1" ]] || [[ -z "$PARAM2" ]] || [[ -z "$PARAM3" ]]; then
+    error_exit "Os parâmetros PARAM1, PARAM2 e PARAM3 são obrigatórios!"
   fi
 }
 
@@ -69,7 +69,6 @@ run_spark_submit() {
     --conf spark.sql.shuffle.partitions=$shuffle_partitions \
     --conf spark.pyspark.python=/usr/bin/python3 \
     --conf spark.pyspark.driver.python=/usr/bin/python3 \
-    --conf 'spark.driver.extraJavaOptions=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=8090 -Dcom.sun.management.jmxremote.rmi.port=8091 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=10.101.34.131' \
     --conf spark.metrics.conf=/usr/local/spark/conf/metrics.properties \
     --conf spark.ui.prometheus.enabled=true \
     --conf spark.executor.processTreeMetrics.enabled=true \
@@ -77,24 +76,30 @@ run_spark_submit() {
     --py-files /app/dependencies.zip,/app/metrics.py,/app/tools.py,/app/schema_google.py \
     --conf spark.executorEnv.MONGO_USER=$MONGO_USER \
     --conf spark.executorEnv.MONGO_PASS=$MONGO_PASS\
+    --conf spark.executorEnv.ES_USER=$ES_USER \
+    --conf spark.executorEnv.ES_PASS=$ES_PASS\
     --conf spark.executorEnv.SERPAPI_KEY=$SERPAPI_KEY \
     --conf spark.executorEnv.MONGO_HOST=mongodb \
     --conf spark.executorEnv.MONGO_PORT=27017 \
     --conf spark.executorEnv.MONGO_DB=compass \
     --conf spark.driverEnv.MONGO_USER=$MONGO_USER \
     --conf spark.driverEnv.MONGO_PASS=$MONGO_PASS\
+    --conf spark.driverEnv.ES_USER=$ES_USER \
+    --conf spark.driverEnv.ES_PASS=$ES_PASS \
     --conf spark.driverEnv.SERPAPI_KEY=$SERPAPI_KEY\
     --conf spark.driverEnv.MONGO_HOST=mongodb \
     --conf spark.driverEnv.MONGO_PORT=27017 \
     --conf spark.driverEnv.MONGO_DB=compass \
     --conf spark.yarn.appMasterEnv.MONGO_USER=$MONGO_USER \
-    --conf spark.yarn.appMasterEnv.MONGO_PASS=$MONGO_PASS\
+    --conf spark.yarn.appMasterEnv.ES_PASS=$MONGO_PASS\
+    --conf spark.yarn.appMasterEnv.ES_USER=$ES_USER \
+    --conf spark.yarn.appMasterEnv.ES_PASS=$ES_PASS \
     --conf spark.yarn.appMasterEnv.SERPAPI_KEY=$SERPAPI_KEY\
     --conf spark.yarn.appMasterEnv.MONGO_HOST=mongodb \
     --conf spark.yarn.appMasterEnv.MONGO_PORT=27017 \
     --conf spark.yarn.appMasterEnv.MONGO_DB=compass \
-    --name dmc_ingestion_reviews_google_play_$CONFIG_ENV_$PARM1 \
-    /app/repo_extc_google_play.py $CONFIG_ENV $PARAM1 $PARAM2"
+    --name dmc_ingestion_reviews_google_play_$CONFIG_ENV-$PARAM2  \
+    /app/repo_extc_google_play.py $CONFIG_ENV $PARAM1 $PARAM2 $PARAM3"
 
   # Exibe o comando para depuração
   log "Comando spark-submit que será executado: $spark_cmd"
@@ -115,7 +120,7 @@ log "************************************************************"
 log "Iniciando Execução de Spark Submit"
 log "************************************************************"
 
-echo "parametros: $CONFIG_ENV $PARAM1 $PARAM2"
+echo "parametros: $CONFIG_ENV $PARAM1 $PARAM2 $PARAM3"
 
 # Define o arquivo de configuração com base no ambiente
 if [[ "$CONFIG_ENV" == "pre" ]]; then
@@ -126,7 +131,6 @@ else
   echo "Ambiente inválido! Use 'pre' ou 'prod', param enviado: $CONFIG_ENV."
   exit 1
 fi
-
 
 # Valida as variáveis de ambiente e parâmetros
 validate_params
