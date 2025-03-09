@@ -104,13 +104,13 @@ def send_metrics_fail(e):
     # JSON de erro
     error_metrics = {
         "timestamp": date_format(current_timestamp(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
-        "camada": "bronze",
-        "grupo": "compass",
+        "layer": "bronze",
+        "project": "compass",
         "job": "google_play_reviews",
-        "relevancia": "0",
+        "priority": "0",
         "torre": "SBBR_COMPASS",
-        "client": type_client,
-        "erro": str(e)
+        "client": F.upper(type_client),
+        "error": str(e)
     }
 
     metrics_json = json.dumps(error_metrics)
