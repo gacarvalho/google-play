@@ -115,7 +115,11 @@ def main():
             metrics_json = metrics_collector.collect_metrics(valid_df, invalid_df, validation_results, name_app, type_client)
 
             # Salvar métricas
-            save_metrics(metrics_json)
+            save_metrics(
+                metrics_type='success',
+                index=ELASTIC_INDEX_SUCCESS,
+                metrics_data= metrics_json
+            )
             logging.info(f"[*] Métricas da aplicação: {json.loads(metrics_json)}")
         else:
             logging.error("[*] Nenhuma avaliação encontrada para o product_id fornecido.")
