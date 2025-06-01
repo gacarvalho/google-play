@@ -30,7 +30,7 @@ def parse_arguments():
     """
     Analisa os argumentos da linha de comando.
     """
-    parser = argparse.ArgumentParser(description="Processa avaliações da Apple Store.")
+    parser = argparse.ArgumentParser(description="Processa avaliações do Google Play.")
     parser.add_argument("<env>", type=str, help="Ambiente de execução (ex: 'pre', 'prod').")
     parser.add_argument("<product_id>", type=str, help="ID da avaliação do aplicativo na Loja do Google Play.")
     parser.add_argument("<name_app>", type=str, help="Nome do aplicativo.")
