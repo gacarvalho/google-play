@@ -13,26 +13,20 @@ Essa aplicação faz parte do projeto **compass-deployment**, uma solução dese
 
 ---
 
-## 📦 Artefato
 
-- **Imagem Docker:** `iamgacarvalho/dmc-app-ingestion-reviews-google-play-hdfs-compass:1.0.1`
-- **Repositório GitHub:** [https://github.com/gacarvalho/google-play](https://github.com/gacarvalho/google-play)
-- **Descrição:** Coleta avaliações de usuários através da **Google Play Store**, valida os dados e armazena no **HDFS** em formato **Parquet**.
+`📦 artefato`  `iamgacarvalho/dmc-app-ingestion-reviews-google-play-hdfs-compass:1.0.1`
+- 
+- **Versão:** `1.0.1`
+- **Repositório:** [GitHub](https://github.com/gacarvalho/google-play)
+- **Imagem Docker:** [Docker Hub](https://hub.docker.com/repository/docker/iamgacarvalho/dmc-app-ingestion-reviews-google-play-hdfs-compass/tags/1.0.1/sha256-df992cb185f7a17ed0d40306e91d50139553e17e5c2a4d900579a0d42b804d9e)
+- **Descrição:**  Coleta avaliações de clientes do Banco Santander armazenadas no  **Google Play**, processa os dados e os armazena no **HDFS** em formato **Parquet**.
+- **Parâmetros:**
 
----
+    - `$CONFIG_ENV` (`Pre`, `Pro`) → Define o ambiente: `Pre` (Pré-Produção), `Pro` (Produção).
+    - `$PARAM1` (`name-review-localizado-na-url-do-app`). → Identificado (string) do aplicativo do Google Play, podendo ser localizado na URL na loja do Google Play, exemplo: `https://play.google.com/store/apps/details?id=br.com.santander.way&hl=pt_BR&pli=1`, nesse caso, o ID que vai no parametro é: `br.com.santander.way`.
+    - `$PARAM2` (`nome-do-canal-ou-app`). → Nome do canal/app no Google Play. Para novos, use hífen (-).
+    - `$PARAM3` (`pf`,`pj`). → Indicador do segmento do cliente. `PF` (Pessoa Física), `PJ` (Pessoa Juridica)
 
-## ⚙️ Parâmetros de Execução
-
-| Parâmetro     | Descrição                                                                 |
-|---------------|---------------------------------------------------------------------------|
-| `$CONFIG_ENV` | Define o ambiente de execução: `Pre` (Pré-Produção), `Pro` (Produção)     |
-| `$PARAM1`     | ID do app na Google Play (ex: `com.santander.app`)                        |
-| `$PARAM2`     | Nome do canal/app (usar hífen `-` como separador se necessário)           |
-| `$PARAM3`     | Segmento do cliente: `pf` (Pessoa Física), `pj` (Pessoa Jurídica)         |
-
----
-
-## 📊 Visão Geral
 
 | Componente          | Descrição                                                                 |
 |---------------------|---------------------------------------------------------------------------|
@@ -46,10 +40,3 @@ Essa aplicação faz parte do projeto **compass-deployment**, uma solução dese
 | **Métricas**        | Tempo de execução, registros válidos/inválidos, consumo Spark             |
 | **Tratamento Erros**| Logs detalhados, salvamento separado dos registros inválidos             |
 | **Execução**        | `spark-submit repo_extc_google_play.py <env> <product_id> <app> <cliente>` |
-
----
-
-## 📝 Exemplo de Execução
-
-```bash
-spark-submit repo_extc_google_play.py Pre com.santander.app santander-way pf
