@@ -1,26 +1,54 @@
-import logging
 import sys
-import json
 import os
+import json
+import logging
+import argparse
+from datetime import datetime
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.functions import current_timestamp, date_format
 from pyspark.sql.types import StringType
-from datetime import datetime
-from metrics import MetricsCollector, validate_ingest
-from tools import *
 from elasticsearch import Elasticsearch
+from metrics import MetricsCollector, validate_ingest
+from tools import fetch_reviews, save_dataframe, save_metrics
 
+from src.schema.schema_google import google_play_schema_bronze
+
+# Configuração básica de logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# --- Constantes da Aplicação ---
+NUM_PAGES_DEFAULT = 10
+PATH_TARGET_BASE = "/santander/bronze/compass/reviews/googlePlay/"
+PATH_TARGET_FAIL_BASE = "/santander/bronze/compass/reviews_fail/googlePlay/"
+ENV_PRE_VALUE = "pre"
+ELASTIC_INDEX_SUCCESS = "compass_dt_datametrics"
+ELASTIC_INDEX_FAIL = "compass_dt_datametrics_fail"
+
+
+def parse_arguments():
+    """
+    Analisa os argumentos da linha de comando.
+    """
+    parser = argparse.ArgumentParser(description="Processa avaliações da Apple Store.")
+    parser.add_argument("<env>", type=str, help="Ambiente de execução (ex: 'pre', 'prod').")
+    parser.add_argument("<product_id>", type=str, help="ID da avaliação do aplicativo na Loja do Google Play.")
+    parser.add_argument("<name_app>", type=str, help="Nome do aplicativo.")
+    parser.add_argument("<type_client>", type=str, help="Tipo de cliente.")
+    return parser.parse_args()
 
 def main():
-    # Capturar argumentos da linha de comando
+    """
+    Capturar argumentos da linha de comando usando argparse
+    args = parse_arguments() # Descomente esta linha e comente a de baixo para usar argparse
+    No entanto, para manter a compatibilidade com a estrutura original de sys.argv,
+    continuaremos usando sys.argv, mas a recomendação é usar argparse.
+    """
     args = sys.argv
-
-    print("[*] ARGUMENTOS: " + str(args))
 
     # Verificar se o número correto de argumentos foi passado
     if len(args) != 5:
-        print("[*] Usage: spark-submit app.py <product_id> <name_app>")
+        logging.error(f"[*] Usage: spark-submit app.py <product_id> <name_app>")
         sys.exit(1)
 
     # Entrada e captura de variaveis e parametros
@@ -30,16 +58,15 @@ def main():
     type_client = args[4]
     reviews_df = None
 
-
     # Criação da sessão Spark
     spark = spark_session()
 
     try:
-        # Coleta de métricas #######################################################################################
+        # Coleta de métricas 
         metrics_collector = MetricsCollector(spark)
         metrics_collector.start_collection()
 
-        # Buscar avaliações ########################################################################################
+        # Buscar avaliações ######
         reviews_data = fetch_reviews(product_id)
 
         if reviews_data:
@@ -47,24 +74,39 @@ def main():
             reviews_rdd = spark.sparkContext.parallelize(reviews_data)
             reviews_df = spark.createDataFrame(reviews_rdd)
 
-            # Verifica se a coluna "response" está presente ########################################################
+            # Verifica se a coluna "response" está presente 
             if "response" not in reviews_df.columns:
                 # Adiciona a coluna "response" com valores nulos
                 reviews_df = reviews_df.withColumn("response", F.lit(None).cast(StringType()))
 
-            # Definicao dos paths ##################################################################################
-            datePath = datetime.now()
-            path_target = f"/santander/bronze/compass/reviews/googlePlay/{name_app}_{type_client}/odate={datePath.strftime('%Y%m%d')}/"
-            path_target_fail = f"/santander/bronze/compass/reviews_fail/googlePlay/{name_app}_{type_client}/odate={datePath.strftime('%Y%m%d')}/"
+            # Definicao dos paths 
+            path_target = f"{PATH_TARGET_BASE}{name_app}_{type_client}/"
+            path_target_fail = f"{PATH_TARGET_FAIL_BASE}{name_app}_{type_client}/"
 
             # Valida o DataFrame e coleta resultados
             valid_df, invalid_df, validation_results = validate_ingest(reviews_df)
 
+            if env == ENV_PRE_VALUE: # Usando constante
+                valid_df.take(10)
+
             # Salvar dados válidos
-            save_dataframe(valid_df, path_target, "valido")
+            save_dataframe(
+                df=valid_df,
+                path=path_target,
+                label="valido",
+                schema=google_play_schema_bronze(),
+                partition_column="odate", # data de carga referencia
+                compression="snappy"
+            )
 
             # Salvar dados inválidos
-            save_dataframe(invalid_df, path_target_fail, "invalido")
+            save_dataframe(
+                df=invalid_df,
+                path=path_target_fail,
+                label="invalido",
+                partition_column="odate", # data de carga referencia
+                compression="snappy"
+            )
 
             # Finaliza coleta de metricas
             metrics_collector.end_collection()
@@ -74,89 +116,20 @@ def main():
 
             # Salvar métricas
             save_metrics(metrics_json)
-
-            print(f"[*] Métricas da aplicação: {json.loads(metrics_json)}")
+            logging.info(f"[*] Métricas da aplicação: {json.loads(metrics_json)}")
         else:
-            print("[*] Nenhuma avaliação encontrada para o product_id fornecido.")
+            logging.error("[*] Nenhuma avaliação encontrada para o product_id fornecido.")
 
     except Exception as e:
-        print(f"[*] Erro ao criar o DataFrame: {e}")
         logging.error(f"[*] Erro ao processar avaliações: {e}", exc_info=True)
-        send_metrics_fail(e)
-
-
+        save_metrics(
+            metrics_type="fail",
+            index=ELASTIC_INDEX_FAIL,
+            error=e,
+            client="UNKNOWN_CLIENT"
+        )
     finally:
         spark.stop()
-
-def send_metrics_fail(e):
-
-    ES_HOST = "http://elasticsearch:9200"
-    ES_INDEX = "compass_dt_datametrics_fail"
-    ES_USER = os.environ["ES_USER"]
-    ES_PASS = os.environ["ES_PASS"]
-
-    # Conectar ao Elasticsearch
-    es = Elasticsearch(
-        [ES_HOST],
-        basic_auth=(ES_USER, ES_PASS)
-    )
-
-    # JSON de erro
-    error_metrics = {
-        "timestamp": date_format(current_timestamp(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
-        "layer": "bronze",
-        "project": "compass",
-        "job": "google_play_reviews",
-        "priority": "0",
-        "torre": "SBBR_COMPASS",
-        "client": F.upper(type_client),
-        "error": str(e)
-    }
-
-    metrics_json = json.dumps(error_metrics)
-
-    try:
-        # Converter JSON em dicionário
-        metrics_data = json.loads(metrics_json)
-
-        # Inserir no Elasticsearch
-        response = es.index(index=ES_INDEX, document=metrics_data)
-
-        logging.info(f"[*] Métricas da aplicação salvas no Elasticsearch: {response}")
-    except json.JSONDecodeError as e:
-        logging.error(f"[*] Erro ao processar métricas: {e}", exc_info=True)
-    except Exception as e:
-        logging.error(f"[*] Erro ao salvar métricas no Elasticsearch: {e}", exc_info=True)
-
-def save_metrics(metrics_json):
-    """
-    Salva as métricas.
-    """
-
-    ES_HOST = "http://elasticsearch:9200"
-    ES_INDEX = "compass_dt_datametrics"
-    ES_USER = os.environ["ES_USER"]
-    ES_PASS = os.environ["ES_PASS"]
-
-    # Conectar ao Elasticsearch
-    es = Elasticsearch(
-        [ES_HOST],
-        basic_auth=(ES_USER, ES_PASS)
-    )
-
-    try:
-        # Converter JSON em dicionário
-        metrics_data = json.loads(metrics_json)
-
-        # Inserir no Elasticsearch
-        response = es.index(index=ES_INDEX, document=metrics_data)
-
-        logging.info(f"[*] Métricas da aplicação salvas no Elasticsearch: {response}")
-    except json.JSONDecodeError as e:
-        logging.error(f"[*] Erro ao processar métricas: {e}", exc_info=True)
-    except Exception as e:
-        logging.error(f"[*] Erro ao salvar métricas no Elasticsearch: {e}", exc_info=True)
-
 
 
 
