@@ -11,8 +11,7 @@ from pyspark.sql.types import StringType
 from elasticsearch import Elasticsearch
 from metrics import MetricsCollector, validate_ingest
 from tools import fetch_reviews, save_dataframe, save_metrics
-
-from src.schema.schema_google import google_play_schema_bronze
+from schema_google import google_play_schema_bronze
 
 # Configuração básica de logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
