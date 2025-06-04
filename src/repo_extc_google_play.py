@@ -24,25 +24,8 @@ ENV_PRE_VALUE = "pre"
 ELASTIC_INDEX_SUCCESS = "compass_dt_datametrics"
 ELASTIC_INDEX_FAIL = "compass_dt_datametrics_fail"
 
-
-def parse_arguments():
-    """
-    Analisa os argumentos da linha de comando.
-    """
-    parser = argparse.ArgumentParser(description="Processa avaliações do Google Play.")
-    parser.add_argument("<env>", type=str, help="Ambiente de execução (ex: 'pre', 'prod').")
-    parser.add_argument("<product_id>", type=str, help="ID da avaliação do aplicativo na Loja do Google Play.")
-    parser.add_argument("<name_app>", type=str, help="Nome do aplicativo.")
-    parser.add_argument("<type_client>", type=str, help="Tipo de cliente.")
-    return parser.parse_args()
-
 def main():
-    """
-    Capturar argumentos da linha de comando usando argparse
-    args = parse_arguments() # Descomente esta linha e comente a de baixo para usar argparse
-    No entanto, para manter a compatibilidade com a estrutura original de sys.argv,
-    continuaremos usando sys.argv, mas a recomendação é usar argparse.
-    """
+
     args = sys.argv
 
     # Verificar se o número correto de argumentos foi passado
