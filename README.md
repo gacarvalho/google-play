@@ -2,12 +2,12 @@
 
 <p align="left">
   <img src="https://img.shields.io/badge/projeto-Compass-blue?style=flat-square" alt="Projeto">
-  <img src="https://img.shields.io/badge/versão-1.0.0-blue?style=flat-square" alt="Versão">
+  <img src="https://img.shields.io/badge/versão aplicação-1.0.1-blue?style=flat-square" alt="Versão Aplicação">
   <img src="https://img.shields.io/badge/status-deployed-green?style=flat-square" alt="Status">
   <img src="https://img.shields.io/badge/autor-Gabriel_Carvalho-lightgrey?style=flat-square" alt="Autor">
 </p>
 
-Essa aplicação faz parte do projeto **compass-deployment**, uma solução desenvolvida no contexto do programa **Data Master**, promovido pela F1rst Tecnologia. O objetivo é prover uma plataforma escalável para captura, processamento e análise de **feedbacks de usuários** dos aplicativos do Banco Santander, com foco na **Google Play Store**.
+Essa aplicação faz parte do projeto **compass-deployment**, uma solução desenvolvida no contexto do programa **Data Master**, promovido pela F1rst Tecnologia. O objetivo é prover uma plataforma escalável para captura, processamento e análise de **feedbacks de usuários** dos aplicativos de aplictivos de Instituições, com foco na **Google Play Store**.
 
 ![<data-master-compass>](https://github.com/gacarvalho/repo-spark-delta-iceberg/blob/main/header.png?raw=true)
 
@@ -15,7 +15,7 @@ Essa aplicação faz parte do projeto **compass-deployment**, uma solução dese
 
 
 `📦 artefato`  `iamgacarvalho/dmc-app-ingestion-reviews-google-play-hdfs-compass:1.0.1`
-- 
+
 - **Versão:** `1.0.1`
 - **Repositório:** [GitHub](https://github.com/gacarvalho/google-play)
 - **Imagem Docker:** [Docker Hub](https://hub.docker.com/repository/docker/iamgacarvalho/dmc-app-ingestion-reviews-google-play-hdfs-compass/tags/1.0.1/sha256-df992cb185f7a17ed0d40306e91d50139553e17e5c2a4d900579a0d42b804d9e)
