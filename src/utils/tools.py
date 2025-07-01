@@ -259,7 +259,7 @@ def save_metrics(metrics_type: str,
         logging.info(f"[*] Métricas salvas com sucesso no índice {index}. ID: {response['_id']}")
         return response
 
-    except ElasticsearchException as es_error:
+    except Exception as es_error:
         logging.error(f"[*] Falha ao salvar no Elasticsearch: {str(es_error)}")
         raise
     except Exception as e:
